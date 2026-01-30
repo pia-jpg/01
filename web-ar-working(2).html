@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAR Image Tracker</title>
+    <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1c2407b26c61958baa93967b5412487cd94b290b/dist/aframe-master.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        .arjs-loader {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .arjs-loader div {
+            text-align: center;
+            color: white;
+            font-size: 1.25em;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            max-width: 90%;
+            font-size: 14px;
+        }
+        
+        #info h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        
+        #info p {
+            margin: 5px 0;
+            font-size: 13px;
+        }
+
+        #startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 10000;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        #startButton:hover {
+            background: #45a049;
+        }
+
+        #markerInfo {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            max-width: 90%;
+            font-size: 12px;
+        }
+
+        #markerInfo a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <button id="startButton">📷 AR Starten</button>
+
+    <div class="arjs-loader" style="display:none;">
+        <div class="spinner"></div>
+        <div>Lade AR Experience...<br>Bitte Kamera-Zugriff erlauben!</div>
+    </div>
+
+    <div id="info" style="display:none;">
+        <h2>📱 Kamera aktiv!</h2>
+        <p>Halte einen der Marker vor die Kamera</p>
+        <p style="font-size: 11px; margin-top: 10px;">Status: Suche nach Marker...</p>
+    </div>
+
+    <div id="markerInfo" style="display:none;">
+        <strong>📄 Marker herunterladen:</strong><br>
+        <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">Hiro Marker</a> | 
+        <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/kanji.png" target="_blank">Kanji Marker</a>
+    </div>
+
+    <a-scene
+        id="arScene"
+        vr-mode-ui="enabled: false"
+        renderer="logarithmicDepthBuffer: true; precision: medium;"
+        embedded
+        arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3; patternRatio: 0.75;"
+        style="display:none;">
+        
+        <a-assets>
+            <!-- Deine Ebenen als Bilder -->
+            <img id="layer1Img" crossorigin="anonymous" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Ccircle cx='100' cy='100' r='80' fill='%23FF6B9D'/%3E%3C/svg%3E">
+            <img id="layer2Img" crossorigin="anonymous" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Ccircle cx='100' cy='100' r='60' fill='%234ECDC4'/%3E%3C/svg%3E">
+            <img id="layer3Img" crossorigin="anonymous" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Ccircle cx='100' cy='100' r='40' fill='%23FFE66D'/%3E%3C/svg%3E">
+        </a-assets>
+
+        <!-- Marker 1: Hiro -->
+        <a-marker id="marker1" preset="hiro" registerevents>
+            <a-entity id="content1">
+                <!-- Ebene 1: Schwebt hoch -->
+                <a-plane 
+                    src="#layer1Img" 
+                    position="0 0.3 0" 
+                    rotation="-90 0 0" 
+                    width="1.5" 
+                    height="1.5" 
+                    material="transparent: true; opacity: 0.9"
+                    animation="property: position; to: 0 0.6 0; dir: alternate; dur: 2000; loop: true; easing: easeInOutSine"
+                    animation__rotate="property: rotation; to: -90 360 0; dur: 8000; loop: true; easing: linear">
+                </a-plane>
+
+                <!-- Ebene 2: Rotiert -->
+                <a-plane 
+                    src="#layer2Img" 
+                    position="0 0.15 0" 
+                    rotation="-90 0 0" 
+                    width="1.5" 
+                    height="1.5" 
+                    material="transparent: true; opacity: 0.8"
+                    animation="property: rotation; to: -90 -360 0; dur: 6000; loop: true; easing: linear">
+                </a-plane>
+
+                <!-- Ebene 3: Pulsiert -->
+                <a-plane 
+                    src="#layer3Img" 
+                    position="0 0 0" 
+                    rotation="-90 0 0" 
+                    width="1.5" 
+                    height="1.5" 
+                    material="transparent: true; opacity: 0.7"
+                    animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 1500; loop: true; easing: easeInOutQuad">
+                </a-plane>
+
+                <!-- Partikel -->
+                <a-sphere position="0.4 0.5 0" radius="0.06" color="#FFD700"
+                    animation="property: position; to: 0.4 1.0 0; dur: 2000; loop: true; dir: alternate; easing: easeInOutQuad">
+                </a-sphere>
+                <a-sphere position="-0.4 0.5 0" radius="0.06" color="#FF69B4"
+                    animation="property: position; to: -0.4 1.0 0; dur: 2500; loop: true; dir: alternate; easing: easeInOutQuad; delay: 500">
+                </a-sphere>
+                <a-sphere position="0 0.5 0.4" radius="0.06" color="#00CED1"
+                    animation="property: position; to: 0 1.0 0.4; dur: 3000; loop: true; dir: alternate; easing: easeInOutQuad; delay: 1000">
+                </a-sphere>
+
+                <!-- Text -->
+                <a-text 
+                    value="✨ Hiro erkannt!" 
+                    position="0 1.0 0" 
+                    align="center" 
+                    color="#FFFFFF"
+                    width="3"
+                    animation="property: position; to: 0 1.3 0; dir: alternate; dur: 2000; loop: true">
+                </a-text>
+            </a-entity>
+        </a-marker>
+
+        <!-- Marker 2: Kanji (Alternative) -->
+        <a-marker id="marker2" preset="kanji" registerevents>
+            <a-entity id="content2">
+                <!-- Andere Animation für Kanji Marker -->
+                <a-box position="0 0.5 0" 
+                       width="1" height="1" depth="1" 
+                       color="#4CAF50"
+                       animation="property: rotation; to: 0 360 0; dur: 4000; loop: true; easing: linear"
+                       animation__scale="property: scale; to: 1.3 1.3 1.3; dir: alternate; dur: 2000; loop: true">
+                </a-box>
+                
+                <a-text 
+                    value="✨ Kanji erkannt!" 
+                    position="0 1.2 0" 
+                    align="center" 
+                    color="#FFFFFF"
+                    width="3">
+                </a-text>
+            </a-entity>
+        </a-marker>
+
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+        let markerFound = false;
+
+        // AR Starten
+        document.getElementById('startButton').addEventListener('click', function() {
+            this.style.display = 'none';
+            document.querySelector('.arjs-loader').style.display = 'flex';
+
+            setTimeout(() => {
+                document.getElementById('arScene').style.display = 'block';
+                document.querySelector('.arjs-loader').style.display = 'none';
+                document.getElementById('info').style.display = 'block';
+                document.getElementById('markerInfo').style.display = 'block';
+                
+                console.log('AR Scene gestartet');
+            }, 1500);
+        });
+
+        // Registriere Marker Events
+        AFRAME.registerComponent('registerevents', {
+            init: function () {
+                const marker = this.el;
+                const markerName = marker.getAttribute('preset') || marker.getAttribute('type');
+                
+                marker.addEventListener('markerFound', function() {
+                    markerFound = true;
+                    console.log('✨ Marker gefunden:', markerName);
+                    
+                    const info = document.getElementById('info');
+                    info.innerHTML = `
+                        <h2>✨ Marker erkannt!</h2>
+                        <p>Die Animation läuft jetzt!</p>
+                        <p style="font-size: 11px; color: #4CAF50;">Status: ${markerName} Marker getrackt</p>
+                    `;
+                    info.style.background = 'rgba(76, 175, 80, 0.9)';
+                });
+                
+                marker.addEventListener('markerLost', function() {
+                    markerFound = false;
+                    console.log('📱 Marker verloren');
+                    
+                    const info = document.getElementById('info');
+                    info.innerHTML = `
+                        <h2>📱 Marker verloren</h2>
+                        <p>Halte den Marker wieder vor die Kamera</p>
+                        <p style="font-size: 11px;">Status: Suche nach Marker...</p>
+                    `;
+                    info.style.background = 'rgba(0, 0, 0, 0.8)';
+                });
+            }
+        });
+
+        // Debug Info
+        window.addEventListener('load', function() {
+            console.log('WebAR geladen');
+            console.log('Verwende Hiro oder Kanji Marker');
+        });
+
+        // Camera Ready Event
+        document.addEventListener('camera-ready', function() {
+            console.log('Kamera ist bereit!');
+        });
+    </script>
+</body>
+</html>
