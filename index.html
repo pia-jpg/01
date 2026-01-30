@@ -151,7 +151,7 @@
             <div class="layer layer-1" data-depth="1.2"></div>
             
             <!-- Layer 2: Mittelgrund -->
-            <div class="layer layer-2" data-depth="0.9"></div>
+            <div class="layer layer-2" data-depth="0.8"></div>
             
             <!-- Layer 3: Vordergrund -->
             <div class="layer layer-3" data-depth="0.3"></div>
@@ -187,8 +187,8 @@
         function updateParallax(x, y) {
             // x und y sind zwischen -1 und 1
             const maxRotation = 15; // Grad
-            const maxTranslate = 60; // Pixel - erhöht für mehr Tiefe
-            const zoomFactor = 0.75; // Subtiler Zoom
+            const maxTranslate = 50; // Pixel - erhöht für mehr Tiefe
+            const zoomFactor = 1.05; // Subtiler Zoom
 
             // Begrenzung hinzufügen - verhindert Über-Rotation
             x = Math.max(-0.8, Math.min(0.8, x));
