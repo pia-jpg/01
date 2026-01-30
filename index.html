@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Interaktive Parallax Postkarte</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        .postcard-container {
+            position: relative;
+            width: min(90vw, 400px);
+            aspect-ratio: 2 / 3;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+        }
+
+        .postcard-frame {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #f8f6f0 0%, #e8e6e0 100%);
+            border-radius: 8px;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8);
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .postcard-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .layer {
+            position: absolute;
+            width: 120%;
+            height: 120%;
+            left: -10%;
+            top: -10%;
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.1s ease-out;
+            will-change: transform;
+        }
+
+        /* Layer 1 - Background (Berg/Himmel) */
+        .layer-1 {
+            background: linear-gradient(180deg, 
+                #87CEEB 0%, 
+                #B0E0E6 30%, 
+                #DEB887 70%, 
+                #8B7355 100%);
+            z-index: 1;
+        }
+
+        /* Layer 2 - Mittelgrund (Bäume/Hügel) */
+        .layer-2 {
+            z-index: 2;
+        }
+
+        /* Layer 2 Platzhalter-Design */
+        .layer-2::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            background: linear-gradient(to top,
+                #2d5016 0%,
+                #3d6b1f 30%,
+                rgba(61, 107, 31, 0.8) 60%,
+                transparent 100%);
+            clip-path: polygon(
+                0% 100%, 
+                0% 40%, 
+                10% 45%, 
+                20% 35%, 
+                30% 40%, 
+                40% 30%, 
+                50% 35%, 
+                60% 25%, 
+                70% 30%, 
+                80% 35%, 
+                90% 30%, 
+                100% 40%, 
+                100% 100%
+            );
+        }
+
+        /* Layer 3 - Vordergrund (Blumen/Gras) */
+        .layer-3 {
+            z-index: 3;
+        }
+
+        /* Layer 3 Platzhalter-Design */
+        .layer-3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(to top,
+                #0d1f08 0%,
+                #1a3d0f 20%,
+                #2d5016 50%,
+                rgba(45, 80, 22, 0.7) 75%,
+                transparent 100%);
+            clip-path: polygon(
+                0% 100%, 
+                0% 60%, 
+                5% 58%, 
+                10% 62%, 
+                15% 55%, 
+                20% 60%, 
+                25% 52%, 
+                30% 58%, 
+                35% 50%, 
+                40% 55%, 
+                45% 48%, 
+                50% 53%, 
+                55% 47%, 
+                60% 52%, 
+                65% 45%, 
+                70% 50%, 
+                75% 48%, 
+                80% 53%, 
+                85% 50%, 
+                90% 55%, 
+                95% 52%, 
+                100% 58%, 
+                100% 100%
+            );
+        }
+
+        /* Dekorative Blumen im Vordergrund - größer und deutlicher */
+        .layer-3::before {
+            content: '';
+            position: absolute;
+            bottom: 12%;
+            left: 20%;
+            width: 25px;
+            height: 25px;
+            background: #FF6B6B;
+            border-radius: 50%;
+            box-shadow: 
+                40px 8px 0 20px #FFD93D,
+                80px -5px 0 22px #FF6B6B,
+                -30px 12px 0 18px #6BCF7F,
+                120px 5px 0 20px #FFD93D,
+                60px -8px 0 16px #6BCF7F,
+                140px 15px 0 24px #FF6B6B,
+                -10px -5px 0 20px #FFD93D,
+                100px 18px 0 18px #6BCF7F;
+        }
+
+        /* Layer 4 - Masken-Ebene (Postkartenrahmen) */
+        .layer-mask {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        /* Innerer Rahmen-Effekt */
+        .layer-mask::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 12px solid rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            box-shadow: 
+                inset 0 0 20px rgba(0, 0, 0, 0.1),
+                inset 0 2px 4px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Vintage Briefmarken-Stil Ecke */
+        .stamp {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 60px;
+            height: 80px;
+            background: linear-gradient(135deg, #f4e4d7 0%, #e8d5c4 100%);
+            border: 3px dashed rgba(139, 115, 85, 0.4);
+            border-radius: 3px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #8B7355;
+            text-align: center;
+            padding: 8px;
+            line-height: 1.3;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transform: rotate(3deg);
+            font-weight: bold;
+        }
+
+        /* Instruktionen */
+        .instructions {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            text-align: center;
+            z-index: 1000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Gyroscope Aktivierungs-Button (nur iOS) */
+        #activate-gyro {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            z-index: 2000;
+            display: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        #activate-gyro:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        #activate-gyro:active {
+            transform: translate(-50%, -50%) scale(0.98);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .postcard-container {
+                width: 85vw;
+            }
+            
+            .instructions {
+                font-size: 12px;
+                padding: 10px 20px;
+                bottom: 20px;
+            }
+
+            .stamp {
+                width: 50px;
+                height: 65px;
+                font-size: 9px;
+                top: 20px;
+                right: 20px;
+            }
+        }
+
+        /* Smoother animations */
+        @media (prefers-reduced-motion: reduce) {
+            .layer,
+            .postcard-container {
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="postcard-container" id="postcard">
+        <div class="postcard-frame">
+            <div class="postcard-inner">
+                <!-- Layer 1: Hintergrund (Himmel/Berge) -->
+                <div class="layer layer-1" data-depth="0.3"></div>
+                
+                <!-- Layer 2: Mittelgrund (Hügel/Bäume) -->
+                <div class="layer layer-2" data-depth="0.7"></div>
+                
+                <!-- Layer 3: Vordergrund (Gras/Blumen) -->
+                <div class="layer layer-3" data-depth="1.2"></div>
+                
+                <!-- Layer 4: Maske (Rahmen) -->
+                <div class="layer-mask"></div>
+            </div>
+        </div>
+        
+        <div class="stamp">DEINE<br>ILLU<br>HIER</div>
+    </div>
+
+    <button id="activate-gyro">Gyroscope aktivieren</button>
+
+    <div class="instructions">
+        <span id="desktop-hint">Bewege die Maus für den Parallax-Effekt</span>
+        <span id="mobile-hint" style="display: none;">Bewege dein Gerät für den 3D-Effekt</span>
+    </div>
+
+    <script>
+        // Geräteerkennung
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        
+        const postcard = document.getElementById('postcard');
+        const activateButton = document.getElementById('activate-gyro');
+        const layers = document.querySelectorAll('.layer');
+        
+        let gyroPermissionGranted = false;
+        let isGyroActive = false;
+
+        // Instruktionen anpassen
+        if (isMobile) {
+            document.getElementById('desktop-hint').style.display = 'none';
+            document.getElementById('mobile-hint').style.display = 'inline';
+        }
+
+        // Berechnet Parallax-Position
+        function updateParallax(x, y) {
+            // x und y sind zwischen -1 und 1
+            const maxRotation = 15; // Grad
+            const maxTranslate = 50; // Pixel - erhöht für mehr Tiefe
+            const zoomFactor = 1.05; // Subtiler Zoom
+
+            // Begrenzung hinzufügen - verhindert Über-Rotation
+            x = Math.max(-0.8, Math.min(0.8, x));
+            y = Math.max(-0.8, Math.min(0.8, y));
+
+            // Karten-Rotation (3D-Effekt)
+            const rotateY = x * maxRotation;
+            const rotateX = -y * maxRotation;
+
+            // Zoom basierend auf Bewegung
+            const distance = Math.sqrt(x * x + y * y);
+            const scale = 1 + (distance * (zoomFactor - 1));
+
+            postcard.style.transform = `
+                rotateY(${rotateY}deg) 
+                rotateX(${rotateX}deg)
+                scale(${scale})
+            `;
+
+            // Layer bewegen
+            layers.forEach(layer => {
+                const depth = parseFloat(layer.getAttribute('data-depth'));
+                const moveX = x * maxTranslate * depth;
+                const moveY = y * maxTranslate * depth;
+                
+                layer.style.transform = `translate(${-moveX}px, ${-moveY}px)`;
+            });
+        }
+
+        // Maus-Bewegung (Desktop)
+        if (!isMobile) {
+            document.addEventListener('mousemove', (e) => {
+                const rect = postcard.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                // Normalisiert zu -1 bis 1
+                const x = (e.clientX - centerX) / (rect.width / 2);
+                const y = (e.clientY - centerY) / (rect.height / 2);
+                
+                updateParallax(x, y);
+            });
+
+            // Reset bei Maus-Verlassen
+            document.addEventListener('mouseleave', () => {
+                updateParallax(0, 0);
+            });
+        }
+
+        // Gyroscope (Mobile)
+        if (isMobile) {
+            // iOS 13+ benötigt Benutzererlaubnis
+            if (isIOS && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                activateButton.style.display = 'block';
+                
+                activateButton.addEventListener('click', async () => {
+                    try {
+                        const permission = await DeviceOrientationEvent.requestPermission();
+                        if (permission === 'granted') {
+                            gyroPermissionGranted = true;
+                            activateButton.style.display = 'none';
+                            startGyroscope();
+                        }
+                    } catch (error) {
+                        console.error('Gyroscope-Berechtigung abgelehnt:', error);
+                    }
+                });
+            } else {
+                // Nicht-iOS oder älteres iOS
+                startGyroscope();
+            }
+        }
+
+        function startGyroscope() {
+            isGyroActive = true;
+            let lastGamma = 0;
+            let lastBeta = 0;
+
+            window.addEventListener('deviceorientation', (event) => {
+                if (!isGyroActive) return;
+
+                // Gamma: Links/Rechts Neigung (-90 bis 90)
+                // Beta: Vor/Zurück Neigung (-180 bis 180)
+                let gamma = event.gamma || 0;
+                let beta = event.beta || 0;
+
+                // Sanfte Interpolation für flüssigere Bewegung
+                gamma = lastGamma + (gamma - lastGamma) * 0.1;
+                beta = lastBeta + (beta - lastBeta) * 0.1;
+
+                lastGamma = gamma;
+                lastBeta = beta;
+
+                // Normalisieren
+                const x = Math.max(-1, Math.min(1, gamma / 45));
+                const y = Math.max(-1, Math.min(1, (beta - 45) / 45));
+
+                updateParallax(x, y);
+            });
+        }
+
+        // Touch-Alternative für Geräte ohne Gyroscope
+        if (isMobile && !isGyroActive) {
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            postcard.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            });
+
+            postcard.addEventListener('touchmove', (e) => {
+                if (!isGyroActive) {
+                    const rect = postcard.getBoundingClientRect();
+                    const deltaX = e.touches[0].clientX - touchStartX;
+                    const deltaY = e.touches[0].clientY - touchStartY;
+                    
+                    const x = Math.max(-1, Math.min(1, deltaX / 100));
+                    const y = Math.max(-1, Math.min(1, deltaY / 100));
+                    
+                    updateParallax(x, y);
+                }
+            });
+
+            postcard.addEventListener('touchend', () => {
+                if (!isGyroActive) {
+                    updateParallax(0, 0);
+                }
+            });
+        }
+
+        // Initiale Position
+        updateParallax(0, 0);
+    </script>
+</body>
+</html>
