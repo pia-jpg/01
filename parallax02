@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Interaktive Parallax Postkarte</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        .postcard-container {
+            position: relative;
+            width: min(90vw, 400px);
+            aspect-ratio: 2 / 3;
+            transform-style: preserve-3d;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .postcard-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* HIER FÜGST DU DEINE BILDER EIN */
+        .layer {
+            position: absolute;
+            width: 140%;
+            height: 140%;
+            left: -20%;
+            top: -20%;
+            background-size: cover;
+            background-position: center;
+            will-change: transform;
+        }
+
+        /* Layer 1 - Hintergrund */
+        .layer-1 {
+            background-image: url('v2_layer1.png'); /* DEIN BILD HIER */
+            /* Falls du noch kein Bild hast, Platzhalter: */
+            background-color: #FFF6E9;
+            z-index: 1;
+        }
+
+        /* Layer 2 - Mittelgrund */
+        .layer-2 {
+            background-image: url('v2_layer2.png'); /* DEIN BILD HIER */
+            /* Falls du noch kein Bild hast, Platzhalter: */
+            background-color: transparent;
+            z-index: 2;
+        }
+
+        /* Layer 3 - Vordergrund */
+        .layer-3 {
+            background-image: url('v2_layer3.png'); /* DEIN BILD HIER */
+            /* Falls du noch kein Bild hast, Platzhalter: */
+            background-color: transparent;
+            z-index: 3;
+        }
+
+        /* Layer 4 - Vordergrund */
+        .layer-4 {
+            background-image: url('v2_layer4.png'); /* DEIN BILD HIER */
+            /* Falls du noch kein Bild hast, Platzhalter: */
+            background-color: transparent;
+            z-index: 4;
+        }
+
+                /* Layer 5 - Vordergrund */
+        .layer-5 {
+            background-image: url('v2_layer5.png'); /* DEIN BILD HIER */
+            /* Falls du noch kein Bild hast, Platzhalter: */
+            background-color: transparent;
+            z-index: 5;
+        }
+        
+        /* Instruktionen */
+        .instructions {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            text-align: center;
+            z-index: 1000;
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Gyroscope Aktivierungs-Button (nur iOS) */
+        #activate-gyro {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            z-index: 2000;
+            display: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        #activate-gyro:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+        }
+
+        #activate-gyro:active {
+            transform: translate(-50%, -50%) scale(0.98);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .postcard-container {
+                width: 85vw;
+            }
+            
+            .instructions {
+                font-size: 12px;
+                padding: 10px 20px;
+                bottom: 20px;
+            }
+        }
+
+        /* Smoother animations */
+        @media (prefers-reduced-motion: reduce) {
+            .layer,
+            .postcard-container {
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="postcard-container" id="postcard">
+        <div class="postcard-inner">
+            <!-- Layer 1: Hintergrund -->
+            <div class="layer layer-1" data-depth="1.2"></div>
+            
+            <!-- Layer 2: Mittelgrund -->
+            <div class="layer layer-2" data-depth="0.7"></div>
+            
+            <!-- Layer 3: Vordergrund -->
+            <div class="layer layer-3" data-depth="0.5"></div>
+          
+            <!-- Layer 4: Vordergrund -->
+            <div class="layer layer-4" data-depth="0.3"></div>
+
+            <!-- Layer 5: Vordergrund -->
+            <div class="layer layer-5" data-depth="0.1"></div>
+        </div>
+    </div>
+
+    <button id="activate-gyro">Gyroscope aktivieren</button>
+
+    <div class="instructions">
+        <span id="desktop-hint">Bewege die Maus für den Parallax-Effekt</span>
+        <span id="mobile-hint" style="display: none;">Bewege dein Gerät für den 3D-Effekt</span>
+    </div>
+
+    <script>
+        // Geräteerkennung
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        
+        const postcard = document.getElementById('postcard');
+        const activateButton = document.getElementById('activate-gyro');
+        const layers = document.querySelectorAll('.layer');
+        
+        let gyroPermissionGranted = false;
+        let isGyroActive = false;
+
+        // Instruktionen anpassen
+        if (isMobile) {
+            document.getElementById('desktop-hint').style.display = 'none';
+            document.getElementById('mobile-hint').style.display = 'inline';
+        }
+
+        // Smooth interpolation values
+        let currentX = 0;
+        let currentY = 0;
+        let targetX = 0;
+        let targetY = 0;
+
+        // Berechnet Parallax-Position
+        function updateParallax(x, y) {
+            targetX = Math.max(-0.8, Math.min(0.8, x));
+            targetY = Math.max(-0.8, Math.min(0.8, y));
+        }
+
+        // Smooth animation loop
+        function animate() {
+            // Sehr sanfte Interpolation (höher = smoother aber langsamer)
+            const smoothing = 0.15;
+            
+            currentX += (targetX - currentX) * smoothing;
+            currentY += (targetY - currentY) * smoothing;
+
+            const maxRotation = 15;
+            const maxTranslate = 50;
+            const zoomFactor = 1.05;
+
+            // Karten-Rotation (3D-Effekt)
+            const rotateY = currentX * maxRotation;
+            const rotateX = -currentY * maxRotation;
+
+            // Zoom basierend auf Bewegung
+            const distance = Math.sqrt(currentX * currentX + currentY * currentY);
+            const scale = 1 + (distance * (zoomFactor - 1));
+
+            postcard.style.transform = `
+                rotateY(${rotateY}deg) 
+                rotateX(${rotateX}deg)
+                scale(${scale})
+            `;
+
+            // Layer bewegen
+            layers.forEach(layer => {
+                const depth = parseFloat(layer.getAttribute('data-depth'));
+                const moveX = currentX * maxTranslate * depth;
+                const moveY = currentY * maxTranslate * depth;
+                
+                layer.style.transform = `translate(${-moveX}px, ${-moveY}px)`;
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Animation starten
+        animate();
+
+        // Maus-Bewegung (Desktop)
+        if (!isMobile) {
+            document.addEventListener('mousemove', (e) => {
+                const rect = postcard.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                // Normalisiert zu -1 bis 1
+                const x = (e.clientX - centerX) / (rect.width / 2);
+                const y = (e.clientY - centerY) / (rect.height / 2);
+                
+                updateParallax(x, y);
+            });
+
+            // Reset bei Maus-Verlassen
+            document.addEventListener('mouseleave', () => {
+                updateParallax(0, 0);
+            });
+        }
+
+        // Gyroscope (Mobile)
+        if (isMobile) {
+            // iOS 13+ benötigt Benutzererlaubnis
+            if (isIOS && typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                activateButton.style.display = 'block';
+                
+                activateButton.addEventListener('click', async () => {
+                    activateButton.textContent = 'Lädt...';
+                    try {
+                        const permission = await DeviceOrientationEvent.requestPermission();
+                        if (permission === 'granted') {
+                            gyroPermissionGranted = true;
+                            activateButton.style.display = 'none';
+                            startGyroscope();
+                        } else {
+                            activateButton.textContent = 'Zugriff verweigert - Touch aktiviert';
+                            activateButton.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+                            setTimeout(() => {
+                                activateButton.style.display = 'none';
+                            }, 2000);
+                        }
+                    } catch (error) {
+                        console.error('Gyroscope-Fehler:', error);
+                        activateButton.textContent = 'Touch-Modus aktiviert';
+                        activateButton.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+                        setTimeout(() => {
+                            activateButton.style.display = 'none';
+                        }, 2000);
+                    }
+                });
+            } else {
+                // Nicht-iOS oder älteres iOS - direkt starten
+                startGyroscope();
+            }
+        }
+
+        function startGyroscope() {
+            isGyroActive = true;
+            let lastGamma = 0;
+            let lastBeta = 0;
+
+            window.addEventListener('deviceorientation', (event) => {
+                if (!isGyroActive) return;
+
+                let gamma = event.gamma || 0;
+                let beta = event.beta || 0;
+
+                // Noch sanftere Interpolation für Gyroscope
+                gamma = lastGamma + (gamma - lastGamma) * 0.2;
+                beta = lastBeta + (beta - lastBeta) * 0.2;
+
+                lastGamma = gamma;
+                lastBeta = beta;
+
+                // Normalisieren
+                const x = Math.max(-1, Math.min(1, gamma / 45));
+                const y = Math.max(-1, Math.min(1, (beta - 45) / 45));
+
+                updateParallax(x, y);
+            });
+        }
+
+        // Touch-Alternative für Geräte ohne Gyroscope oder als Fallback
+        if (isMobile) {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isTouching = false;
+
+            postcard.addEventListener('touchstart', (e) => {
+                if (!isGyroActive) {
+                    isTouching = true;
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }
+            });
+
+            postcard.addEventListener('touchmove', (e) => {
+                if (!isGyroActive && isTouching) {
+                    e.preventDefault();
+                    const deltaX = e.touches[0].clientX - touchStartX;
+                    const deltaY = e.touches[0].clientY - touchStartY;
+                    
+                    const x = Math.max(-1, Math.min(1, deltaX / 100));
+                    const y = Math.max(-1, Math.min(1, deltaY / 100));
+                    
+                    updateParallax(x, y);
+                }
+            }, { passive: false });
+
+            postcard.addEventListener('touchend', () => {
+                if (!isGyroActive) {
+                    isTouching = false;
+                    updateParallax(0, 0);
+                }
+            });
+        }
+
+        // Initiale Position
+        updateParallax(0, 0);
+    </script>
+</body>
+</html>
