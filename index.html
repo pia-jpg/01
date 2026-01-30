@@ -27,7 +27,6 @@
             width: min(90vw, 400px);
             aspect-ratio: 2 / 3;
             transform-style: preserve-3d;
-            transition: transform 0.1s ease-out;
             overflow: hidden;
             border-radius: 8px;
         }
@@ -42,13 +41,12 @@
         /* HIER FÜGST DU DEINE BILDER EIN */
         .layer {
             position: absolute;
-            width: 120%;
-            height: 120%;
-            left: -10%;
-            top: -10%;
+            width: 140%;
+            height: 140%;
+            left: -20%;
+            top: -20%;
             background-size: cover;
             background-position: center;
-            transition: transform 0.1s ease-out;
             will-change: transform;
         }
 
@@ -151,10 +149,10 @@
             <div class="layer layer-1" data-depth="1.2"></div>
             
             <!-- Layer 2: Mittelgrund -->
-            <div class="layer layer-2" data-depth="0.9"></div>
+            <div class="layer layer-2" data-depth="0.7"></div>
             
             <!-- Layer 3: Vordergrund -->
-            <div class="layer layer-3" data-depth="0.5"></div>
+            <div class="layer layer-3" data-depth="0.3"></div>
         </div>
     </div>
 
@@ -183,23 +181,36 @@
             document.getElementById('mobile-hint').style.display = 'inline';
         }
 
+        // Smooth interpolation values
+        let currentX = 0;
+        let currentY = 0;
+        let targetX = 0;
+        let targetY = 0;
+
         // Berechnet Parallax-Position
         function updateParallax(x, y) {
-            // x und y sind zwischen -1 und 1
-            const maxRotation = 15; // Grad
-            const maxTranslate = 50; // Pixel - erhöht für mehr Tiefe
-            const zoomFactor = 1.05; // Subtiler Zoom
+            targetX = Math.max(-0.8, Math.min(0.8, x));
+            targetY = Math.max(-0.8, Math.min(0.8, y));
+        }
 
-            // Begrenzung hinzufügen - verhindert Über-Rotation
-            x = Math.max(-0.8, Math.min(0.8, x));
-            y = Math.max(-0.8, Math.min(0.8, y));
+        // Smooth animation loop
+        function animate() {
+            // Sehr sanfte Interpolation (höher = smoother aber langsamer)
+            const smoothing = 0.15;
+            
+            currentX += (targetX - currentX) * smoothing;
+            currentY += (targetY - currentY) * smoothing;
+
+            const maxRotation = 15;
+            const maxTranslate = 50;
+            const zoomFactor = 1.05;
 
             // Karten-Rotation (3D-Effekt)
-            const rotateY = x * maxRotation;
-            const rotateX = -y * maxRotation;
+            const rotateY = currentX * maxRotation;
+            const rotateX = -currentY * maxRotation;
 
             // Zoom basierend auf Bewegung
-            const distance = Math.sqrt(x * x + y * y);
+            const distance = Math.sqrt(currentX * currentX + currentY * currentY);
             const scale = 1 + (distance * (zoomFactor - 1));
 
             postcard.style.transform = `
@@ -211,12 +222,17 @@
             // Layer bewegen
             layers.forEach(layer => {
                 const depth = parseFloat(layer.getAttribute('data-depth'));
-                const moveX = x * maxTranslate * depth;
-                const moveY = y * maxTranslate * depth;
+                const moveX = currentX * maxTranslate * depth;
+                const moveY = currentY * maxTranslate * depth;
                 
                 layer.style.transform = `translate(${-moveX}px, ${-moveY}px)`;
             });
+
+            requestAnimationFrame(animate);
         }
+
+        // Animation starten
+        animate();
 
         // Maus-Bewegung (Desktop)
         if (!isMobile) {
@@ -283,14 +299,12 @@
             window.addEventListener('deviceorientation', (event) => {
                 if (!isGyroActive) return;
 
-                // Gamma: Links/Rechts Neigung (-90 bis 90)
-                // Beta: Vor/Zurück Neigung (-180 bis 180)
                 let gamma = event.gamma || 0;
                 let beta = event.beta || 0;
 
-                // Sanfte Interpolation für flüssigere Bewegung
-                gamma = lastGamma + (gamma - lastGamma) * 0.1;
-                beta = lastBeta + (beta - lastBeta) * 0.1;
+                // Noch sanftere Interpolation für Gyroscope
+                gamma = lastGamma + (gamma - lastGamma) * 0.2;
+                beta = lastBeta + (beta - lastBeta) * 0.2;
 
                 lastGamma = gamma;
                 lastBeta = beta;
@@ -343,3 +357,4 @@
     </script>
 </body>
 </html>
+
