@@ -41,17 +41,17 @@ body {
 }
 
 /* Beispiel-Layer */
-.layer-bg {
+.layer1 {
   background: #fff6e9;
   z-index: 1;
 }
 
-.layer-mid {
+.layer2 {
   background: transparent;
   z-index: 2;
 }
 
-.layer-front {
+.layer3 {
   background: transparent;
   z-index: 3;
 }
@@ -61,9 +61,9 @@ body {
 <body>
 
 <div class="postcard" id="scene">
-  <div class="layer layer-bg" data-depth="-0.4"></div>
-  <div class="layer layer-mid" data-depth="-0.2"></div>
-  <div class="layer layer-front" data-depth="0"></div>
+  <div class="layer layer1" data-depth="-0.4"></div>
+  <div class="layer layer2" data-depth="-0.2"></div>
+  <div class="layer layer3" data-depth="0"></div>
 </div>
 
 <script>
