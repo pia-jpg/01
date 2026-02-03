@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Apple-Style Spatial Parallax</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #1a1a2e;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.postcard {
+  width: min(90vw, 400px);
+  aspect-ratio: 2 / 3;
+  position: relative;
+  transform-style: preserve-3d;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.layer {
+  position: absolute;
+  inset: -20%;
+  background-size: cover;
+  background-position: center;
+  will-change: transform;
+}
+
+/* Beispiel-Layer */
+.layer-bg {
+  background: #fff6e9;
+  z-index: 1;
+}
+
+.layer-mid {
+  background: transparent;
+  z-index: 2;
+}
+
+.layer-front {
+  background: transparent;
+  z-index: 3;
+}
+</style>
+</head>
+
+<body>
+
+<div class="postcard" id="scene">
+  <div class="layer layer-bg" data-depth="-0.4"></div>
+  <div class="layer layer-mid" data-depth="-0.2"></div>
+  <div class="layer layer-front" data-depth="0"></div>
+</div>
+
+<script>
+const scene = document.getElementById("scene");
+const layers = [...document.querySelectorAll(".layer")];
+
+let targetX = 0;
+let targetY = 0;
+let currentX = 0;
+let currentY = 0;
+
+// ---------- Parameter ----------
+const SMOOTHING = 0.25;
+const MAX_ROTATION = 5;   // Grad
+const MAX_TRANSLATE = 14; // px
+
+// ---------- Non-linear Mapping ----------
+function ease(v) {
+  return Math.sign(v) * Math.pow(Math.abs(v), 0.75);
+}
+
+// ---------- Render Loop ----------
+function animate() {
+  currentX += (targetX - currentX) * SMOOTHING;
+  currentY += (targetY - currentY) * SMOOTHING;
+
+  const rotY = currentX * MAX_ROTATION;
+  const rotX = -currentY * MAX_ROTATION;
+
+  scene.style.transform = `
+    rotateY(${rotY}deg)
+    rotateX(${rotX}deg)
+  `;
+
+  layers.forEach(layer => {
+    const depth = parseFloat(layer.dataset.depth);
+    const dx = currentX * MAX_TRANSLATE * depth;
+    const dy = currentY * MAX_TRANSLATE * depth;
+
+    layer.style.transform = `
+      translate3d(${-dx}px, ${-dy}px, ${depth * 30}px)
+    `;
+  });
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+
+// ---------- Maus (Desktop) ----------
+document.addEventListener("mousemove", e => {
+  const rect = scene.getBoundingClientRect();
+  const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+  const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+
+  targetX = ease(Math.max(-1, Math.min(1, x)));
+  targetY = ease(Math.max(-1, Math.min(1, y)));
+});
+
+document.addEventListener("mouseleave", () => {
+  targetX = 0;
+  targetY = 0;
+});
+
+// ---------- Gyro (Mobile) ----------
+if (window.DeviceOrientationEvent) {
+  if (typeof DeviceOrientationEvent.requestPermission === "function") {
+    DeviceOrientationEvent.requestPermission().then(p => {
+      if (p === "granted") startGyro();
+    });
+  } else {
+    startGyro();
+  }
+}
+
+function startGyro() {
+  window.addEventListener("deviceorientation", e => {
+    const x = ease(Math.max(-1, Math.min(1, (e.gamma || 0) / 45)));
+    const y = ease(Math.max(-1, Math.min(1, (e.beta || 0) / 45)));
+
+    targetX = x;
+    targetY = y;
+  });
+}
+</script>
+
+</body>
+</html>
