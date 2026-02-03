@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Apple-Style Spatial Parallax</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Spatial Parallax – 3 Layer</title>
 
 <style>
 * {
@@ -32,6 +32,7 @@ body {
   overflow: hidden;
 }
 
+/* Allgemeine Layer-Regeln */
 .layer {
   position: absolute;
   inset: -20%;
@@ -40,19 +41,21 @@ body {
   will-change: transform;
 }
 
-/* Beispiel-Layer */
-.layer1 {
-  background: #fff6e9;
+/* Hintergrund */
+.layer-1 {
+  background-image: url("layer1.png");
   z-index: 1;
 }
 
-.layer2 {
-  background: transparent;
+/* Mittelgrund */
+.layer-2 {
+  background-image: url("layer2.png");
   z-index: 2;
 }
 
-.layer3 {
-  background: transparent;
+/* Vordergrund – ANKER */
+.layer-3 {
+  background-image: url("layer3.png");
   z-index: 3;
 }
 </style>
@@ -61,50 +64,47 @@ body {
 <body>
 
 <div class="postcard" id="scene">
-  <div class="layer layer1" data-depth="-0.4"></div>
-  <div class="layer layer2" data-depth="-0.2"></div>
-  <div class="layer layer3" data-depth="0"></div>
+  <div class="layer layer-1" data-depth="-0.4"></div>
+  <div class="layer layer-2" data-depth="-0.2"></div>
+  <div class="layer layer-3" data-depth="0"></div>
 </div>
 
 <script>
 const scene = document.getElementById("scene");
-const layers = [...document.querySelectorAll(".layer")];
+const layers = document.querySelectorAll(".layer");
 
 let targetX = 0;
 let targetY = 0;
 let currentX = 0;
 let currentY = 0;
 
-// ---------- Parameter ----------
+/* Apple-ähnliche Parameter */
 const SMOOTHING = 0.25;
 const MAX_ROTATION = 5;   // Grad
-const MAX_TRANSLATE = 14; // px
+const MAX_TRANSLATE = 14; // Pixel
 
-// ---------- Non-linear Mapping ----------
+/* Nicht-lineares Mapping */
 function ease(v) {
   return Math.sign(v) * Math.pow(Math.abs(v), 0.75);
 }
 
-// ---------- Render Loop ----------
+/* Render Loop */
 function animate() {
   currentX += (targetX - currentX) * SMOOTHING;
   currentY += (targetY - currentY) * SMOOTHING;
 
-  const rotY = currentX * MAX_ROTATION;
-  const rotX = -currentY * MAX_ROTATION;
-
   scene.style.transform = `
-    rotateY(${rotY}deg)
-    rotateX(${rotX}deg)
+    rotateY(${currentX * MAX_ROTATION}deg)
+    rotateX(${-currentY * MAX_ROTATION}deg)
   `;
 
   layers.forEach(layer => {
     const depth = parseFloat(layer.dataset.depth);
-    const dx = currentX * MAX_TRANSLATE * depth;
-    const dy = currentY * MAX_TRANSLATE * depth;
+    const x = currentX * MAX_TRANSLATE * depth;
+    const y = currentY * MAX_TRANSLATE * depth;
 
     layer.style.transform = `
-      translate3d(${-dx}px, ${-dy}px, ${depth * 30}px)
+      translate3d(${-x}px, ${-y}px, ${depth * 30}px)
     `;
   });
 
@@ -113,7 +113,7 @@ function animate() {
 
 animate();
 
-// ---------- Maus (Desktop) ----------
+/* Maussteuerung (Desktop) */
 document.addEventListener("mousemove", e => {
   const rect = scene.getBoundingClientRect();
   const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
@@ -128,7 +128,7 @@ document.addEventListener("mouseleave", () => {
   targetY = 0;
 });
 
-// ---------- Gyro (Mobile) ----------
+/* Gyro (Mobile) */
 if (window.DeviceOrientationEvent) {
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
     DeviceOrientationEvent.requestPermission().then(p => {
@@ -141,11 +141,8 @@ if (window.DeviceOrientationEvent) {
 
 function startGyro() {
   window.addEventListener("deviceorientation", e => {
-    const x = ease(Math.max(-1, Math.min(1, (e.gamma || 0) / 45)));
-    const y = ease(Math.max(-1, Math.min(1, (e.beta || 0) / 45)));
-
-    targetX = x;
-    targetY = y;
+    targetX = ease(Math.max(-1, Math.min(1, (e.gamma || 0) / 45)));
+    targetY = ease(Math.max(-1, Math.min(1, (e.beta || 0) / 45)));
   });
 }
 </script>
